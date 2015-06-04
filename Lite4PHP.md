@@ -1,0 +1,79 @@
+## 使用方法 ##
+> 在[下载页](http://code.google.com/p/lite/downloads/list) 下载PHP 实例程序，解压到自己虚拟目录根下。
+  * 仿照example/test.xhtml 编写模板
+> > 见：http://code.google.com/p/lite/wiki/XMLLiteSyntax
+  * 仿照WEB-INF/decorators.xml 设置模板布局（可选）
+  * 仿照example/layout.xhtml 编写模板布局页（可选）
+> > 见：http://code.google.com/p/lite/wiki/XMLLiteSiteMesh
+  * 仿照example/test.php 使用模板
+  * 查看模板运行效果：
+> > http://www.xidea.org/project/lite/php/example/test.php
+```
+<?php
+require_once("../WEB-INF/classes/lite/TemplateEngine.php");
+$engine = new TemplateEngine();
+# 通过上下文数据方式传递模板参数：
+$context = array(
+	"int1"=>1,
+	"text1"=>'1'
+);
+$engine->render("/example/test.xhtml",$context);
+
+//# 直接通过全局变量传递模板参数：
+//$int1 = 1;
+//$text1 = '1';
+//$engine->render("/example/test.xhtml");
+?>
+```
+
+## 工作方式 ##
+
+
+> ### 自动模式 ###
+```
+------->[是否已编译]--（否）->[收集源码数据]---->[提交编译服务器]
+             |                      |                    |
+             | （是）               |                    |
+             V           （是）     |                    |
+      [关联文件是否跟新]------------/                    |
+             |                                           |
+             | （否）                                    |
+             |                                           |
+             V                                           V
+  [构建模板实例（从中间代码）] <-------------[返回编译结果（中间代码）]
+             |
+             | (渲染模板)
+             |
+             V
+     
+```
+
+> ### 上线优化 ###
+```
+------->[上线前批处理编译]
+
+
+------->[构建模板实例（从中间代码）]
+             |
+             | (渲染模板)
+             |
+             V
+     
+```
+## 推荐文件结构（Lite相关） ##
+```
++ROOT
+   +WEB-INF
+      +classes
+         -lite
+         -TemplateEngine.php   //Lite for PHP引擎代码
+      -litecached              //中间编译结果缓存目录
+      -decorators.xml          //装饰器配置
+   +example
+      +test.php                //PHP实例
+      +test.xhtml              //测试模板
+      +layout.xhtml            //布局模板（见decorators.xml配置）
+```
+
+## PHP 版本要求 ##
+5.0+

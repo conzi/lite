@@ -1,0 +1,119 @@
+## AutoForm 是什么 ##
+AutoForm是XML\_Lite编译器的一个特征，他负责自动对form标签做适当修改，令其可以在运行时更具服务端数据模型反向推断表单正确的状态。
+
+## AutoForm 像什么 ##
+当你使用一些MVC框架编写网页的时候，编写表单一般都有一些自定义标记库，虽然这些烦琐的标记库增给我们加了不少学习负担，但是，他还是有些好处的，比如，我们再也不用自己填充这些表单的值了，他会根据你表单标签的名称/属性和Action上下文，自动设置表单的值。
+
+是的，AutoForm就是实现类似的功能，但是，他不需要你学习新的标记库。
+你的HTML Input/Select....等等，就可以直接更具他的名称属性，自动填充value值，或者初始化选中状态。
+
+## 填充规则 ##
+
+### input 填充规则： ###
+  * type 属性为 "checkbox" 或者 "radio"
+    1. 如果input包含checked属性，直接按照普通方式渲染该节点，跳过以下步骤。
+    1. 通过name属性，抓取上下文对象。
+    1. 计算value值（如果是el，则需计算），并转化为字符值（String.valueOf(object)）
+    1. 迭代结果（2）,如果发现有对象的字符值等价于结果（3）则该对象为选中状态（checked="checked"），跳过以下步骤。
+    1. 设置input 为非选中状态（无checked属性）
+  * type 属性为其他类型
+    1. 如果input包含value属性，直接按照普通方式渲染该节点，跳过以下步骤。
+    1. 设置input的value属性为"${name}"。
+> > > name为input的name属性值，如：user.name。这时value属性被设置为：${user.name}(下一步渲染过程中，这将渲染为一个属性节点，其值自动填充)
+
+### textarea 填充规则： ###
+  * 包含有效内容（非空文本或子节点）
+
+> > 不做填充处理，直接渲染
+  * 否则
+    1. 清除无效子节点
+    1. 添加文本子节点${name}(name 的解释如上)
+### select/option填充规则： ###
+
+> option选中规类似`<input name="test" type="checkbox">`。不同的是，name属性取的是上层select的name属性。
+
+## Auto Form 与Struts标记库,Velocity,JSTL等实现代码对比 ##
+> ### 对固定选项select的处理 ###
+  * XML Lite
+```
+<select name="keys">
+  <option>1981</option>
+  <option>1982</option>
+  <option>1983</option>
+</select>
+```
+  * Struts1.x
+```
+<html:select property="keys">
+  <html:option value="1981">1981</html:option>
+  <html:option value="1981">1982</html:option>
+  <html:option value="1983">1983</html:option>
+</html:select>
+```
+  * Struts2.x
+```
+<s:select label="keys"
+       name="keys"
+       list="#{'1981':'1981', '1982':'1982','1983':'1983'}"
+/>
+```
+  * Velocity
+```
+<select name="keys">
+  <option 
+#if(${ArrayUtil.contains($keys,1981)})
+ selected="selected"
+#end>1981</option>
+  <option 
+#if(${ArrayUtil.contains($keys,1982)})
+ selected="selected"
+#end>1982</option>
+  <option 
+#if(${ArrayUtil.contains($keys,1983)})
+ selected="selected"
+#end>1983</option>
+</select>
+```
+  * JSTL
+```
+<select name="keys">
+  <option 
+ <c:if test="${myfn:contains(keys,23213)}">
+ selected="selected"</c:if>>1981</option>
+  <option 
+ <c:if test="${myfn:contains(keys,2345)}">
+ selected="selected"</c:if>1982</option>
+  <option 
+ <c:if test="${myfn:contains(keys,235656)}">
+ selected="selected"</c:if>>1983</option>
+</select>
+```
+
+> ### 对动态选项select的处理 ###
+  * XML Lite
+```
+<select name="keys">
+  <c:for var="item" items="${products}">
+    <option value="${item.id}">${item.name}</option>
+  </c:for>
+</select>
+```
+  * Struts1.x
+```
+<html:select property="keys">
+  <html:optionscollection="products" value="id" label="name" />
+</html:select>
+```
+  * Struts2.x
+```
+<s:select label="keys"
+       name="keys"
+       list="products"
+       listKey="id"
+       listValue="name"
+/>
+```
+> ### 对checkbox的处理 ###
+> ....
+> ### 对input[@type =='text' or @type='hidden...']的处理 ###
+> ....

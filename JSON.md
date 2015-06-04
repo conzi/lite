@@ -1,0 +1,88 @@
+### JSON ###
+> JSON 是一个互联网上广泛运用的数据交互格式，语法介绍见：http://www.json.org/
+
+### 存在价值 ###
+> Java环境下官方的JSON实现并不理想。不仅接口繁琐复杂。效率也非常难堪。
+
+> 接口的设计完全不能发挥Java自身优势，Java标准集合，常见原始类型，JavaBean不便直接JSON化。
+
+> 更残酷的现实是，目前其他可用的JSON实现都严重被官方网站的形式影响，都表现的拖泥带水，严重背离了JSON简单特性。
+
+> 而JSEL 的JSON支持，就是为了打破这个僵局，让JSON与Java更好的融合。
+
+
+### 使用JSEL 解析JSON++ ###
+> Lite 的默认表达式实现JSEL，支持JavaScript 表达式语法，本身就是一个JSON 的父集。他除了能解释普通JSON 数据之外，也可以在JSON语法中增加注释，甚至表达式，变量等支持。
+
+> JSEL 可以直接执行JavaScript表达式，解析JSON这个JavaScript表达式子集当能也就不在话下了。通过JSEL解释JSON不仅可以按照宽松的语法模式，还可以在解析的过程中完成一些基本的表达式计算。
+```
+    .....
+    Expression el = ExpressionFactory.getInstance().create("{aa:1+1}");
+    Object result1 = el.evaluate(this);
+    .....
+    Expression el = ExpressionFactory.getInstance().create("{aa:1+x,bb:2+y}");
+　　Object result2 = el.evaluate("x",1,"y",2);
+```
+
+### 使用JSONDecoder 解析JSON ###
+  * 静态方法调用
+> > 最简单的JSON解码方法。使用一个简单的静态函数，这种模式将采用宽松的语法模式解析JSON。
+> > _对象键可省略引号，字符串允许多行也可以用小引号，支持JS定义的全部其他数字字面量格式_
+```
+    Map<String,Number> result = JSONDecoder.decode("{aa:2}");
+```
+  * 自定义解码器
+> > 自定义解码器不仅可以控制是否采用严谨的语法模式，也可以解码的同时；指定输出类，完成特定的类型转换（JavaBean需要有默认构造器，详细转换规则见[JSONType](JSONType.md)）。
+```
+    //设置为严谨模式（不容错）
+    JSONDecoder decoder = new JSONDecoder(true);
+    //自动将JSON数据转化为制定类型的对象
+    MyClass result = decoder.decode("{\"name\":\"jindw\"}",MyClass.class);
+```
+
+
+### 使用JSONEncoder 编码JSON ###
+
+> 这是一个简单的线程安全的工具类，允许安全的将普通JavaBean对象或者Java集合编码成JSON输出。
+  * 防止递归
+> > 不能表示数据引用的递归形式是JSON的一大软肋，所以我们需要一个用来处理递归问题的机制。
+      1. 最大深度控制
+      1. 父节点不重复检测
+> > > > 通过记录当前遍历的父节点，如果发现重复，说明存在递归数据，立即停止或者抛出异常
+> > > > Java标准集合的equals 方法调用时，如果出现自身引用，会引发递归判断最终导致程序溢出，所以，默认的静态方法采用的是引用地址判断的方式检测父节点重复。
+  * 静态方法调用
+
+> > 最简单的JSON化方法。使用一个简单的静态函数：
+> > _不输出class属性，最大深度为64，递归检测（发现递归后抛出异常）_
+
+```
+    String json= JSONEncoder.encode(object);
+```
+
+  * 自定义编码器：
+> > 构造函数的参数意义，当一个JavaBean被当作object序列化时，是否处理class属性，设置最大处理深度。
+```
+//第一个参数（printClassName）设置为输出JavaBean class属性，
+//第二个参数（depth）并控制最大深度为32 
+//第三个参数（addressEqual）设置是否通过引用地址重复来确定是否递归引用，默认为真（避免equals方法异常）
+//第四个参数（throwError   ）是指当发生循环引用时，是否抛出异常(如果不抛异常，打印错误日志后，循环部分当null输出)。
+JSONEncoder encoder= new JSONEncoder(true,32,true,true);
+
+//第一个参数指需要编码的对象
+//第二个参数指定输出流（StringBuilder，StringBuffer，Writer）
+encode.encode(object,out);
+```
+
+#### 支持类型 ####
+  * 简单类型：String、Number、null、Boolean 编码为对应的JSON简单类型字面量。
+  * 数组类型：java.util.Collection（List，Set...）、Object[.md](.md) 、java.util.Iterator 编码为JSON 数组字面量。
+  * 对象类型：java.util.Map、JavaBean 编码为JSON 对象字面量。
+  * 对象 不能出现递归引用
+  * 日期支持扩展（java.util.Date及其子类），[详情键类型支持说明](JSONType.md)
+
+
+
+
+
+## 下载 ##
+  * JSEL：http://code.google.com/p/lite/downloads/list

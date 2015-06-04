@@ -1,0 +1,86 @@
+### JSEL 命令行解释器(CPEL)简介 ###
+如果你希望做一个命令行程序，要把复杂的命令行输入转化为某个JavaBean的属性，那么JSEL引入一个简单的命令分析器是个不错的选择。
+
+
+### 运用方法 ###
+命令行解析时，需要使用一个命令解析对象：[org.xidea.el.impl.CommandParser](http://lite.googlecode.com/svn/trunk/Lite/src/main/org/xidea/el/impl/CommandParser.java)
+
+示例1（JSA 导出程序）
+**实现代码**
+```
+...
+
+	public static void main(String[] args) throws Exception {
+		log.info("Args:" + JSONEncoder.encode(args));
+		ExportAction action = new ExportAction();
+		//将命令行信息设置为当前对象的属性
+		CommandParser.setup(action, args);
+		action.execute();
+	}
+```
+
+**命令行调用**
+```
+java -jar WEB-INF/lib/JSA-20100725.jar -scriptBase ./web/scripts -exports "org.xidea.el:*" "org.xidea.lite.impl:*" "org.xidea.lite.parse:*" -outputPackage ./build/dest/jslite/lite/impl/__package__.js -outputExported ./build/dest/jslite/lite/impl/impl.js
+```
+**ant 调用**
+```
+	<java jar="JSA-20100724.jar">
+		<arg value="-scriptBase" />
+		<arg value="${basedir}/web/scripts" />
+		<arg value="-exports" />
+		<arg value="org.xidea.el:*" />
+		<arg value="org.xidea.lite.impl:*" />
+		<arg value="org.xidea.lite.parse:*" />
+
+		<arg value="-outputPackage" />
+		<arg value="${basedir}/build/dest/jslite/lite/impl/__package__.js" />
+		<arg value="-outputExported" />
+		<arg value="${basedir}/build/dest/jslite/lite/impl/impl.js" />
+	</java>
+```
+示例2（Lite 编译命令）
+**实现代码**
+```
+....
+	public LiteCompiler(String[] args) {
+	}
+
+	public static void main(String[] args) {
+		log.info("Args:"+JSONEncoder.encode(args));
+		LiteCompiler compiler = new LiteCompiler(args)
+		CommandParser.setup(compiler,args);
+		compiler.execute();
+	}
+
+...
+```
+
+**命令行调用**
+```
+java -jar WEB-INF/lib/Template-20100725.jar -root web -litecode web/WEB-INF/litecode
+```
+
+### 具体实现 ###
+
+  1. 生成属性集合
+    1. 顺序遍历参数数组
+    1. 遇到"-"开头的的参数，记录为当前属性名称。
+> > > 属性名称可以多层，可以通过简单EL定位，如：
+```
+simpleAttributeName
+attribute.subAttribute
+array[2]
+array[0]["map-key"]
+```
+    1. 否则，将参数添加为该属性的系列（每个属性有一个值列表）
+    1. 最终得到一个属性（String）->值数组（String[.md](.md)）的map对象。类似 servlet 中 request.getParameterMap()的数据模型。
+  1. 依次写入属性
+    1. 通过JSEL 的PrepareExpression 实现查找表达式的写入实现和属性类型
+> > > 如：Map 的put 方法,javabean 的setter,或数组的写入实现
+    1. 取值
+> > > 如果当前属性类型为java.util.Collection或者数组。取全部值数组，否则取值数组的最后一个字符串。
+    1. 类型转换
+> > > 根据当前CommandParser对应的转换器（默认会注册一批常见装换器）,作类型转换，如果是数组或者确定范型参数的Collection，依次转换类型值(如果是确定范型参数的Map，属性也要转换)。
+    1. 设值
+> > > 通过PrepareExpression 接口，完成值写入。

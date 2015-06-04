@@ -1,0 +1,67 @@
+### 编码时类型支持 ###
+
+  * 简单类型：String、Number、null、Boolean 编码为对应的JSON简单类型字面量。
+  * 日期类型：java.util.Date及其子类（非JSON标准）。
+  * 数组类型：java.util.Iterator、java.util.Collection（List，Set...）、Object 编码为JSON 数组字面量。
+  * 对象类型：java.util.Map、JavaBean? 编码为JSON 对象字面量。
+
+
+### 解码时类型转换支持 ###
+
+> JSONDecoder 解码的过程中，允许指定转化类型，解码后，将自动转化为制定类型的对象。
+
+##### 原始类型支持 #####
+
+  * Number 类型
+> > 为原始类型时（原始类型的Wrapper类型除外），null将被初始化为0，Number子类型会更具目标类型自动转换。
+  * String类型（非原始类型）
+  * Boolean类型
+> > null 将被初始化为false
+  * Charater类型
+> > null 将被初始化为'\0'
+##### 日期类型支持 #####
+
+> JSEL的JSON编码工具采用[W3C Date Format](http://www.w3.org/TR/NOTE-datetime) 日期格式扩展日期类型的支持。编码的目标格式为日期字符串。
+  * 编码支持
+> > 日期编码采用 SimpleDateFormat 完成，默认的编码格式为：yyyy-MM-dd'T'HH:mm:ss.SSSZ。这时完整的日期格式，在JSON编码解码过程中不会丢失精度。
+> > 用户构造JSONEncoder对象时，可以自定义日期格式化方式。
+```
+public JSONEncoder(String dateFormat, boolean ignoreClassName, int depth,
+			boolean checkByAddress, boolean throwError) ;
+//自定义构造器，日期格式只支持到分（yyyy-MM-dd'T'HH:mmZ）
+JSONEncoder myEncoder = new JSONEncoder(JSONEncoder.W3C_DATE_TIME_FORMAT, true, 64, true, true);
+
+```
+  * 解码支持
+> > 日期解码时。只要给出的字符串符合W3C日期格式的任何一种（一共六种），都可以正确解码(日期解码是自定义的解析实现，性能比标准的SimpleDateFormat快一倍左右)。
+```
+   Year:
+      YYYY (eg 1997)
+   Year and month:
+      YYYY-MM (eg 1997-07)
+   Complete date:
+      YYYY-MM-DD (eg 1997-07-16)
+   Complete date plus hours and minutes:
+      YYYY-MM-DDThh:mmTZD (eg 1997-07-16T19:20+01:00)
+   Complete date plus hours, minutes and seconds:
+      YYYY-MM-DDThh:mm:ssTZD (eg 1997-07-16T19:20:30+01:00)
+   Complete date plus hours, minutes, seconds and a decimal fraction of a
+second
+      YYYY-MM-DDThh:mm:ss.sTZD (eg 1997-07-16T19:20:30.45+01:00)
+
+```
+##### JavaBean 支持 #####
+  * JSON源必须为Object（Map）类型
+  * 必须有默认构造器
+  * 属性必须有公开的Setter方法
+  * 如果JSON源包含class属性，将以其值为类名构造JavaBean实例
+
+##### Java集合支持 #####
+  * Map，Collection类型默认按照JSON解码后得到的ArrayList，LinkedHashMap直接赋值。
+
+##### Java数组支持 #####
+  * JSON源必须是数组(List)
+  * Java数组会自动创建，数组元素将从JSON源自动转换。
+
+##### 其他特殊支持 #####
+  * JSON值为String时，目标类型包含 一个String参数的构造器，将自动创建该对象。

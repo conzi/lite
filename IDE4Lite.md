@@ -1,0 +1,11 @@
+## Eclipse ##
+
+Eclipse自带的XML 编辑器是个不错的选择，而且自己配上XSD后，能支持非常完善的Lite XML语法提示和补全。
+### 详细介绍 ###
+http://www.javaeye.com/topic/342483
+
+### 演示界图 ###
+![http://jindw.javaeye.com/upload/attachment/80982/527051db-6734-3796-8d99-ff813dc3832c.png](http://jindw.javaeye.com/upload/attachment/80982/527051db-6734-3796-8d99-ff813dc3832c.png)
+
+### 设置步骤 ###
+![http://www.javaeye.com/upload/attachment/80695/1e6e6627-459c-3f69-9c98-89d845630672.jpg](http://www.javaeye.com/upload/attachment/80695/1e6e6627-459c-3f69-9c98-89d845630672.jpg)

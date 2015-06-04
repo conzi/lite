@@ -1,0 +1,134 @@
+## OS SiteMesh? ##
+
+# 文档已过期 #
+
+
+
+
+
+
+
+
+
+对，XML 模板引擎的SiteMesh的设计就是来自于OS 的[SiteMesh](http://www.opensymphony.com/sitemesh/download.action)。配置方式也类似。有些简化。但与OS [SiteMesh](http://www.opensymphony.com/sitemesh/download.action)不同，Lite XML 的SiteMesh是在模板编译期间实现的。
+
+## 基本语法及用法 ##
+Lite XML SiteMesh 规则定义在：decorators.xml文件中，该文件默认放置在你的WEB-INF目录下。
+示例文件：
+```
+<decorators>
+    <excludes>
+        <pattern>/user/login.xhtml</pattern>
+        <pattern>/**-json.xhtml</pattern>
+    </excludes>
+    <decorator name="book" layout="/book/layout.xhtml">
+        <pattern>/book/**.xhtml</pattern>
+    </decorator>
+    <decorator name="user" layout="/user/layout.xhtml">
+        <pattern>/user/**.xhtml</pattern>
+        <pattern>/group/**.xhtml</pattern>
+    </decorator>
+</decorators>
+```
+#### 内容页面 ####
+当前url指定的目标页面成为内容页面。
+#### 布局页面 ####
+用来装饰内容页面的父模板。
+#### 查找方法 ####
+  * 创建解析上下文。
+  * 获取你请求的模板相对路径，将其设置为当前模板路径（内容页面）。
+  * 在excludes节点下查找是否匹配。
+  * 若存在匹配，当前模板无需装饰，直接解析当前模板（跳转到最后一步）。
+  * 在decorator中查找最长的匹配模式。
+  * 若\*不\*存在匹配，当前模板无需装饰，直接解析当前模板（跳转到最后一步）。
+  * 当前模板对应的xml Document对象作为当前模板上下文的#page节点。
+  * 将最长模式所在的decorator节点指定的layout属性（OS [SiteMesh](http://www.opensymphony.com/sitemesh/download.action)名称为page）作新的当前模板路径。
+  * 解析当前模板路径。
+
+
+#### 模式匹配语法 ####
+  * ""表示任意蚊子匹配，相当于正则表达式 ".**"。
+  * "**"表示一级目录的任意匹配（不能包含"/"）。
+
+#### 与OS [SiteMesh](http://www.opensymphony.com/sitemesh/download.action) 差异 ####
+  * Lite XML SiteMesh永远不关心参数。
+  * decorator节点下用 layout属性代替OS [SiteMesh](http://www.opensymphony.com/sitemesh/download.action)的page属性（为了使语义更加明了）。
+  * 模式匹配的语法与OS [SiteMesh](http://www.opensymphony.com/sitemesh/download.action)有些细微差别...。
+
+#### layout工作原理 ####
+  * 当解析起解析layout页面的时候，内容页面XML Document对象已以键名"#page"存储在当前解析上下文中。
+  * 在layout页面中通过include指令将内容页的某些节点重新包含进当前模板。
+    * 将内容页面的body部分包含进当前页面。
+```
+<c:include path="#page" xpath="//xhtml:body/*" /> 
+```
+    * 将内容页面的head部分包含进当前页面。
+```
+<c:include path="#page" xpath="//xhtml:head/*" /> 
+```
+
+#### 完整layout页示例 ####
+```
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:c="http://www.xidea.org/ns/template">
+	<head>
+		<title>
+			<c:include path="#page" xpath="//xhtml:title/*" />
+		</title>
+		<link href="../styles/default.css" rel="stylesheet"
+			type="text/css" />
+		<c:include path="#page" xpath="//xhtml:head/*" />
+	</head>
+	<body>
+		<div id="header">
+			<div class="title">账户管理</div>
+			<div class="tab-folder">
+				<a class="selected" href="index.action">用户管理</a>
+				<a href="../expense/index.action">账单管理</a>
+				<a href="../book/index.action">图书管理</a>
+			</div>
+			<div class="user">
+                <a href="/encoding-setter.action"  onclick="window.open(this.href,'encoding','top=250,left=200,width=340,height=160').focus();return false;">简繁转换</a>
+				<a href="logout.action">退出</a>
+			</div>
+		</div>
+		<div id="body">
+			<div id="side">
+				<ul>
+					<li
+						class="${requestURI.endsWith('/user/input.action')?'selected':''}">
+						<a href="../user/input.action">注册
+						</a>
+					</li>
+					<li
+						class="${requestURI.endsWith('/user/edit.action')?'selected':''}">
+						<a href="../user/edit.action">修改资料</a>
+					</li>
+					<li
+						class="${requestURI.endsWith('/user/list.action')?'selected':''}">
+						<a href="../user/list.action">用户列表</a>
+					</li>
+					
+					<li
+						class="${requestURI.endsWith('/group/input.action')?'selected':''}">
+						<a href="../group/input.action">创建群组</a>
+					</li>
+					<li
+						class="${requestURI.endsWith('/group/edit.action')?'selected':''}">
+						<a href="../group/edit.action?group.id=${group.id}">管理群组</a>
+					</li>
+					<li
+						class="${requestURI.endsWith('/group/index.action')?'selected':''}">
+						<a href="../group/index.action?group.id=${group.id}">我的群组</a>
+					</li>
+				</ul>
+			</div>
+			<div id="main">
+				<c:include path="#page" xpath="//xhtml:body/*" />
+			</div>
+		</div>
+		<div id="footer"></div>
+	</body>
+</html>
+```

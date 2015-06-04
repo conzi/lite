@@ -1,0 +1,131 @@
+### JSEL简介 ###
+JSEL是一个兼容 JavaScript 运算规则的简单的表达式解释引擎，你可以通过Map接口，或者JavaBean给出一个变量集合，能后通过表达式从这个集合中抽取变量，再通过表达式逻辑生成你需要的数据。
+
+JSEL采用LGPL协议发布，你可以从本站下载它[LiteRT-yyMMdd.jar](http://code.google.com/p/lite/downloads/list)（与Lite模板运行环境一起打包发布，不足100k），将其功能集成到你的系统中。
+
+表达式实例：
+```
+a      //返回变量a
+1+1    //常量运算，返回2
+a+1    //变量处理
+Math.max(a+1,b*2,c%10)   //带函数调用的复杂表达式
+
+```
+
+#### 适用场合 ####
+  * 模板引擎的表达式实现。
+> > 模板系统处理各种后台数据的时候，就需要用到表达式的功能。有些简单的模板系统的表达式功能非常有限，比如说只支持变量，属性获取；如果有了JSEL，他的功能将非常强大。
+> > [LITE](LITE.md)采用的默认表达式引擎就是JSEL。
+  * 通用数学表达式计算工具
+> > 可用于最终用户定义简单运算规则；比如，你可以通过他设计一个功能强大的计算器。
+  * 嵌入其他对文件大小要求苛刻环境。
+> > 如手机软件，webstart小程序中，如果你希望用表达式做一些简单的计算，那么JSEL是一个不错的选择。
+  * 规则引擎的表达式需求
+> > JSEL非常方便扩展，您可以在JSEL基础上扩展业务相关的操作符。或者函数调用。
+
+#### 基本特征 ####
+  * 运算规则基于JavaScript。
+  * 支持变量，常量(基础类型/数字/对象字面量)，ECMA全局函数/对象，基本运算符。
+  * 引擎实现的简单高效
+> > 程序体积非常小（附加上Lite模板运行环境后，jar文件依然只有90k，同类工具OGNL 168k）。
+  * 可扩展
+> > 支持函数扩展，操作符别名定义，操作符定义。
+
+#### 基本用法 ####
+  * 基本接口
+```
+package org.xidea.el;
+
+public interface Expression{
+	/**
+	 * 根据传入的变量上下文（map 或者javabean），执行表达式
+	 * @param context 变量表
+	 * @return
+	 * @see ExpressionImpl#evaluate(varMap)
+	 */
+	public Object evaluate(Object context);
+	/**
+	 * 根据传入的变量上下文（键值数组），执行表达式
+	 * @param keyValue 键值对（两个参数代表一个键值对）
+	 * @return
+	 */
+	public Object evaluate(Object... keyValue);
+}
+```
+  * 代码示例
+```
+import java.util.HashMap;
+import org.xidea.el.Expression;
+import org.xidea.el.ExpressionFactory;
+
+public class JSELTest {
+    private ExpressionFactory factory = ExpressionFactory.getInstance();
+
+    /**
+     * 表达式函数（与对象绑定时，可以不申明为　static）
+     */
+    public int testAdd(int i,int j){
+        return i+j;
+    }
+    public void testExpression(){
+        Expression el = factory.create("12 * 60 + 100");
+        Object result1 = el.evaluate();
+        System.out.println("result1");
+        System.out.println(result1);
+    }
+    public void testMapContext(){
+        Expression el = factory.create("var1 +2 * var2 + obj.testAdd(1,2)");
+
+        Object result21 = el.evaluate("var1",123,
+                                      "var2",456,
+                                      "obj",this);
+        System.out.println("result21:");
+        System.out.println(result21);
+        
+        //通过方式传递变量
+        HashMap<String, Object> context = new HashMap<String, Object>();
+        context.put("var1",111);
+        context.put("var2",222);
+        context.put("obj",this); //设置对象
+
+        Object result22 = el.evaluate(context);
+        System.out.println("result22:");
+        System.out.println(result22);
+    }
+    public void testFunction(){
+        Expression el = factory.create("100 + testAdd(1,2)");
+        Object result3 = el.evaluate(this);
+        System.out.println("result3");
+        System.out.println(result3);
+    }
+    public static void main(String[] args){
+        JSELTest test = new JSELTest();
+        test.testExpression();
+        test.testMapContext();
+        test.testFunction();
+    }
+}
+
+```
+
+
+#### 表达式计算性能 ####
+  * 中间代码优化
+JSEL 中间代码结构，运算模型简单，便于优化；我们没有做任何字节码级别的运行优化，只是做了一些运算模型上的优化，比如布尔运算，三目运算的短路优化。
+  * 编译优化
+> > JSEL 编译期间针对静态运算单元做了预处理，比如　。
+```
+a > (true?1:123+b+c)
+//将被优化为：
+a > 1
+```
+#### 其他参考 ####
+  * [运算符支持](JSELOperator.md)
+JSEL 支持大部分　标准ECMA262 操作符
+  * [函数支持](JSELFunction.md)
+JSEL 支持大部分　标准ECMA262 标准函数
+  * [功能扩展](JSELExtension.md)
+JSEL 允许用户自定义函数，自定于运算符
+
+## 下载 ##
+  * JSEL：http://code.google.com/p/lite/downloads/list

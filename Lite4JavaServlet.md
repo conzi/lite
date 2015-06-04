@@ -1,0 +1,97 @@
+### 需要那些文件 ###
+  * WEB-INF/lib下类库
+```
+    Template.jar            //Lite XML 模板实现
+    commons-logging.jar     //Lite XML 模板实现
+    //For Google AppEngine。Sun JDK等普通环境下无需下列类库
+    js.jar                  //Mozilla Rhino JS支持
+    xalan.jar               //Apache xalan XPath 支持
+```
+  * WEB-INF/下资源
+    * decorators.xml 可选，用来配置页面装饰信息（同SiteMesh）
+```
+<decorators>
+    <excludes>
+        <pattern>/WEB-INF/edit.xhtml</pattern>
+    </excludes>
+    <decorator name="page" layout="/doc/layout.xhtml">
+        <pattern>/doc/*.xhtml</pattern>
+    </decorator>
+    <decorator name="editable" layout="/layout.xhtml">
+        <pattern>**/*.xhtml</pattern>
+    </decorator>
+</decorators>
+
+```
+
+  * web.xml 需要添加LiteXMLServlet
+    * servlet 类名：
+> > > org.xidea.lite.servlet.TemplateServlet
+    * servlet 参数：
+      1. compress 参数
+> > > > 设置是否需要压缩输出,自动压缩html，js语法空白。
+> > > > 压缩是在编译期间完成，所以，不必担心性能问题。
+      1. contentType 参数，设置该参数后，将帮你输出指定的contentType，当然你也可以用Filter完成该工作
+      1. javax.xml.xpath.XPathFactory 参数，如果你的JDK没有默认的XPath支持，那么你需要添加相关类库，并设置相应类名。
+      1. javax.xml.transform.TransformerFactory 参数，如果你的JDK没有默认的XPath支持，那么你需要添加相关类库，并设置相应类名。
+      1. http://www.xidea.org/ns/lite/autoform
+> > > > 如果您需要模板处理自动表单填充，那么您需要设置该参数：
+        * anyway 任何时候都自动填充
+        * form 只有出现在form元素内部的表单才处理自动填充
+
+  * 代码实例
+```
+<?xml version="1.0" encoding="utf-8"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" version="2.5">
+	<servlet>
+		<servlet-name>LiteXML</servlet-name>
+		<servlet-class>
+			org.xidea.lite.servlet.TemplateServlet
+		</servlet-class>
+		<init-param>
+			<param-name>contentType</param-name>
+			<param-value>text/html;charset=UTF-8</param-value>
+		</init-param>
+		<!-- 设置压缩编译属性 -->
+		<init-param>
+			<param-name>compress</param-name>
+			<param-value>true</param-value>
+		</init-param>
+		<init-param>
+			<param-name>contentType</param-name>
+			<param-value>text/html;charset=UTF-8</param-value>
+		</init-param>
+		<init-param>
+			<!-- 如果您的服务器Java环境不支持XPath,那么，您需要添加第三方XPath-->
+			<param-name>javax.xml.xpath.XPathFactory</param-name>
+			<param-value>
+				org.apache.xpath.jaxp.XPathFactoryImpl
+			</param-value>
+		</init-param>
+		<init-param>
+			<!-- 如果您需要添加自动表单功能，请设置该参数 form|anyway -->
+			<param-name>
+				http://www.xidea.org/ns/lite/autoform
+			</param-name>
+			<param-value>form</param-value>
+		</init-param>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>LiteXML</servlet-name>
+		<url-pattern>*.xhtml</url-pattern>
+	</servlet-mapping>
+	<welcome-file-list>
+		<welcome-file>index.xhtml</welcome-file>
+	</welcome-file-list>
+</web-app>
+
+```
+### AppEngine问题及对策 ###
+  * GAE 没有JDK自带的JavaScript支持
+
+> > LiteXML 自1.0 Alpha 7开始，支持前端脚本编译，但是，需要javax.script的JS引擎支持，AppEngine不支持该引擎，1.0 Alpha9之后，虽然可以启动成功，但是如果模板中存在前端模板编译需求时，编译过程会失败。
+> > 解决该问题，我们添加了对Rhino的支持，使用Rhino引擎解析前端模板编译的问题。这需要你在WEB-INF/lib中添加js.jar这个js库。
+
+  * GAE 没有JDK自带的XPath支持
+> > 这导致c:include XPath支持问题，同时，因为LiteXML自带的SiteMesh支持依赖xpath include，所以，这也导致使用decorator配置生效的页面，编译都会失败。
+> > 解决办法是使用第三方xpath库，这需要你在WEB-INF/lib 中添加xalan.jar并且在Servlet初始参数中设置XPathFactory实现类：org.apache.xpath.jaxp.XPathFactoryImpl，当能，你也可以选择其他xpath实现。

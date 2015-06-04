@@ -1,0 +1,129 @@
+### 解析链结构 ###
+Lite Compiler的解析链结构简单表示如下：
+
+```
+   
+[ParseChain]                [NodeParser]    
+    |                             |
+    |                             |
+    |                             |           
+    |----【解析链顶】             ^          
+    |                             |          
+    |-----[HTMLNodeParser] -------/    
+    |                             |              
+    |-----[CoreXMLNodeParser]-----/              
+    |                             |              
+    |-----[DefaultXMLNodeParser]--/              
+    |                             |              
+    |                             |              
+    |-----[TextNodeParser]--------/
+                      ^
+                      |
+                      |
+                      \ ----[TextParser]
+                                  |
+                         【添加自定义文本模板语法】..
+                    
+```
+### 基本用法 ###
+  * 添加节点解析器
+> > 用于控制节点解析，新的解析器将添加在解析链的顶端。
+> > 接口代码：
+```
+function pagerParser (pagerNode，context,chain){
+
+}
+```
+    1. 独立处理模式
+> > > 如果事您的解析器能处理的节点，调用append??? 序列方法，添加中间代码。
+    1. 合作模式
+> > > 可以将当前节点克隆后，做适当修改，能后交由后续解析器处理【chain.process(node)】。
+> > > 不能处理的节点，直接让后续节点处理。
+  * 添加文本语法解析器
+
+> > 用于解析文本节点中的动态内容，如表达式，也可以是文本格式的控制指令（配合TextNodeParser实现）。
+> > 接口代码：
+```
+var pagerParser = {
+	findStart:function(text,start,otherStart){
+		rerurn <el begin>
+	},
+	parse:function(text,start,context){
+		rerurn <el end>
+	}
+}
+```
+    1. 查找指令开始位置
+> > > findStart查找当前指令解析器相关指令最早出现的闻之
+    1. 优先级
+> > > 如果有多个指令解析器都发现有效起始位置，选最先出现的一个。
+    1. 自动处理转义
+> > > 系统自动处理转义
+    1. 解析指令
+> > > 解析完成后，返回指令结束后位置。
+### JS扩展示例 ###
+
+> #### 节点解析器示例 ####
+```
+//我们也可以添加纯js实现的节点解析器或者文本指令解析器
+//下面的例子中 我们演示了一个简单的自定义if语法：
+/**
+ * 以一个翻页组件为例:
+ * <ui:pager selectedIndex="${selected}" list="${links}"/>
+ * 解析函数:
+ *
+ */
+function pagerParser(pagerNode,context,chain){
+    if(pagerNode.nodeName == 'ui:pager'){
+        var selectedEl = (pagerNode.getAttribute("selectedIndex")+'').replace(/^\$\{|\}$/g,'');
+        var listEl = pagerNode.getAttribute("list")+'';
+        context.appendFor(listEl,context.parseEL("link"),null);
+        
+        context.appendIf(context.parseEL("for.index>0"));
+        context.append(",");
+        context.appendEnd();//end else
+	        
+        context.appendIf(context.parseEL(selectedEl+ " == for.index"));
+        context.parse("<a href='${link}'>[${for.index+1}]</a>");
+        context.appendElse(null);
+        context.parse("[${for.index+1}]");
+        context.appendEnd();//end else
+	        
+        context.appendEnd();//end for
+    }else{
+    	chain.process(pagerNode);
+    }
+}
+
+//将节点解析器添加到解析上下文
+context.addNodeParser(pagerParser );
+
+```
+> #### 指令解析器编写实例 ####
+```
+//{{if test}}....{{/endif}}
+var $if = {
+	parse : function(text,start,context){
+		var end = text.indexOf("}}",start);
+		var el = text.substring(start+5,end);
+		el = context.parseEL(el);
+		context.appendIf(el);
+		return end+2;
+	},
+	findStart : function(text,start,otherStart){
+		return text.indexOf("{{if",start);
+	}
+}
+var $endif = {
+	parse : function(text,start,context){
+		context.appendEnd();
+		return start+10;
+	},
+	findStart : function(text,start,otherStart){
+		return text.indexOf("{{/endif}}",start);
+	}
+}
+//将文本指令解析器添加到解析上下文
+context.addTextParser($if);
+context.addTextParser($endif);
+```

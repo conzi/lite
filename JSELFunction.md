@@ -1,0 +1,89 @@
+#### 基本原则 ####
+  * 兼容ECMA262-3标准
+> > 很明显，不管是模板系统还是业务系统，这个函数库都不是最好用的，但是，这是一个已有的标准，且有一定的用户基础。所以，我们默认支持这个函数库，用户也可以根据自己需求扩展自己的函数库，甚至重写某些运算符。
+  * 不能在表达式中执行对上下文有影响的函数
+> > 如：~~pop,push,shift,unshift,splice,reverse~~
+> > > _reverse 需求比较常见, 允许 适用array.concat().reverse();组合方式变通使用(concat 会复制 原数组, 抵消reverse 副作用)._
+  * 正则支持有限
+
+> > 不支持正则表达式相关函数，引擎设计考虑不同平台下的兼容性，所以暂时不考虑正则支持。
+
+
+#### 内置函数支持 ####
+  * 全局函数/对象
+```
+//全局函数
+isFinite, isNaN, parseFloat, parseInt, decodeURI, decodeURIComponent, encodeURI, encodeURIComponent
+//全局变量
+NaN, Infinity
+//全局对象（工具函数聚）
+/**
+ * 成员函数有：abs, acos, asin, atan, ceil, asin, cos,
+ *             exp, floor, log, round,sin, sqrt, tan
+ *             random, min, max, pow ,atan2
+ * 成员属性有：E,PI,LN10,LN2，LOG2E,LOG10E,SQRT1_2, SQRT2,
+ */
+Math
+/**
+ * 成员函数有:
+ *  JSON.stringify(object),
+ *   JSON.parse(json)
+ */
+JSON
+```
+  * 成员函数
+```
+//List 可运用于java.util.List 和 数组
+//Number 可运用于所有整型数或浮点数
+charAt
+类型：String,
+charCodeAt
+类型：String,
+concat
+类型：String,List,
+fromCharCode
+类型：String,
+indexOf
+类型：String,
+join
+类型：List,
+lastIndexOf
+类型：String,
+
+replace
+类型：String,
+
+
+slice
+类型：String,List,
+sort
+类型：List,
+
+split
+类型：String,
+substr
+类型：String,
+substring
+类型：String,
+toExponential
+类型：Number,
+toFixed
+类型：Number,
+toLocaleLowerCase
+类型：String,
+toLocaleUpperCase
+类型：String,
+toLowerCase
+类型：String,
+toPrecision
+类型：Number,
+toString
+类型：Number,List,
+toUpperCase
+类型：String,
+
+
+
+concat(..).reverse()//不能单独调用reverse.
+类型：List,
+```

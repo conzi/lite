@@ -1,0 +1,54 @@
+## 安装软件 ##
+> ### 安装Python2.5 ###
+    * 目前mod\_python 最高只支持2.5,这点比较郁闷
+    * 下载地址：http://python.org/
+> ### 安装mod\_python ###
+    * 下载地址（测试过 Mod\_python 3.3.1）
+> > > http://httpd.apache.org/modules/python-download.cgi
+    * 安装说明
+> > > windows 上有个安装向导，选择Python目录和Apache目录后即安装完成，非常方便。
+> > > 其他操作系统见文档：http://www.modpython.org/
+
+> ### 配置Apache ###
+```
+LoadModule python_module modules/mod_python.so
+Alias /project/lite "D:\workspace\Lite\web"
+<Directory "D:\workspace\Lite\web">
+#   添加url映射
+    AddHandler mod_python .py
+#   设置python响应程序（这里直接指向了一个具体程序，您可以写一个控制器）
+    PythonHandler example/test
+    PythonDebug On
+#   添加python类路径
+    PythonPath "sys.path+['D:\workspace\Lite\web\WEB-INF\classes']"
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Order allow,deny
+    Allow from all
+</Directory>
+```
+## 模板使用实例代码 ##
+```
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from lite import TemplateEngine
+from mod_python import apache
+
+#目前的python版本还没有自动检测网站根目录的机制，马上吧，呵呵
+engine = TemplateEngine("D:/workspace/Lite/web/");
+
+def handler(req):
+    req.content_type = "text/html";
+    #数据模型
+    context = {
+    	"int1":1,
+    	"text1":'1'
+    }
+    #渲染模板
+    engine.render("/example/test.xhtml",context,req);
+    return apache.OK
+```
+## 其他参考 ##
+  1. http://code.google.com/p/lite/wiki/Lite4PHP
+  1. http://code.google.com/p/lite/wiki/Lite4JavaServlet

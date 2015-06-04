@@ -1,0 +1,59 @@
+#### 允许那些自定义 ####
+  * 自定义全新运算符
+> > 如果你希望自定义自己的运算规则，并设置该运算符优先级，JSEL都可以轻松实现。
+  * 给已有运算符添加别名
+> > 如一些模板系统，宁愿用lt 代替 < 用 gt 代替 > 用 eq 代替 == 这些都可以轻松搞定。
+  * 添加新的内置对象
+> > 您可以给您的表达式系统添加一些内置对象（表达式工厂内共享）
+  * 默认工厂不允许自定义
+> > 理由很简单，不要影响别人。
+
+#### 如何自定义 ####
+默认的表达式工厂不允许自定义，如果需要自定义表达式，您首先需要创建自己的表达式工厂。
+```
+//默认表达式，不允许自定义
+ExpressionFactory defaultFactory = ExpressionFactory.getInstance();
+//自创建表达式，可以自定义
+ExpressionFactoryImpl userFactory= new ExpressionFactoryImpl();
+```
+#### 添加内置对象 ####
+  * 代码示例
+```
+ExpressionFactoryImpl factory= new ExpressionFactoryImpl();
+//内置一个字符串
+factory.addVar("domain","www.xidea.org");
+//内置一个helper对象
+factory.addVar("helper",new MyHelper());
+//内置一个静态函数
+factory.addVar("md5",MyHelper.class.getMethod("md5",String.class));
+
+//测试内置对象
+Expression　el = factory.create("helper.loadByURL('http://'+domain+'/'+path)");
+String json = (String)el.evaluate("path","test.json");
+
+//测试内置函数
+Expression　el = factory.create("md5(username+':'+password)");
+String md5pass= (String)el.evaluate("username","jindw","password","123456");
+```
+  * 基本原理
+内置对象是在标准JavaScript 语法基础上。通过扩充标准函数库或者添加内置对象的方式来实现自定义需求，内置对象在表达式工厂内共享。
+
+#### 添加自定义运算符 ####
+  * 代码示例
+```
+ExpressionFactoryImpl factory= new ExpressionFactoryImpl();
+
+//以大于运算符为参照，静态函数：MyHelper.contains 为实现，创建一个新运算符：contains
+factory.addOperator(ExpressionToken.OP_GT,       //运算符信息样本（参数个数，优先级）
+           "contains",
+            MyHelper.class.getMethod("contains",List.class, Object.class))
+
+//创建大于小于运算符的别名　gt,lt. (没有实现的方式即为给样本运算符添加别名)
+factory.addOperator(ExpressionToken.OP_GT, "gt",null);
+factory.addOperator(ExpressionToken.OP_LT,"lt",null);
+
+Expression　el = factory.create("(['a','b','c'] contains key)  ?  1  :  key gt 'b'");
+System.out.println(el.evaluate("key","a"));
+```
+  * 基本原理
+> > 自定义运算符是超越标准JavaScript 语法，通过参照表达式的方式，自定义运算符行为，优先级等语法层面的内容。
